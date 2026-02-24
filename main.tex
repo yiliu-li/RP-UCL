@@ -1,7 +1,10 @@
 \documentclass{article}
-\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
 
-\title{RP-UCL}
+\title{Enhancing Video Understanding by Explicit 3D and Time: \\ Towards 4D Understanding in Metrology}
 \author{Aiden Li}
 \date{February 2026}
 
@@ -9,6 +12,81 @@
 
 \maketitle
 
+\begin{abstract}
+Current Multimodal Large Language Models (MLLMs) demonstrate impressive capabilities in general video description but often falter when tasked with precise metrology and detailed dynamic analysis. Questions requiring exact quantification of motion, speed, or spatial relationships—such as "How fast is the runner moving?" or "How many times did the car roll over?"—remain challenging for state-of-the-art models like Gemini Flash or GPT-5-mini. This research proposal introduces a framework for \textbf{4D Understanding}, integrating explicit 3D spatial representations with temporal dynamics. By conditioning MLLMs on these rich 4D signals, we aim to bridge the gap between visual perception and physical reasoning.
+\end{abstract}
+
 \section{Introduction}
+\label{sec:introduction}
+
+Video understanding has seen rapid advancements with the advent of fast chat assistants. However, a significant gap remains in their ability to comprehend the detailed physical dynamics of a scene. While models can describe "a car crashing," they struggle to quantify the physics of the event. Specifically, current systems fail to reliably answer questions about:
+\begin{itemize}
+    \item \textbf{Detailed Dynamics:} Understanding the precise mechanics of motion.
+    \item \textbf{Metrology:} Quantifying attributes such as speed, distance, and acceleration (e.g., "How fast is the runner moving toward the camera?").
+    \item \textbf{Event Counting:} Accurately counting complex, rapid events (e.g., "How many times did the car roll over?").
+\end{itemize}
+
+We posit that this limitation stems from the lack of explicit 3D and temporal grounding in the model's input representations. Although robust 3D reconstruction and motion estimation models exist, they are not yet effectively leveraged by chat assistants. This research asks: \textit{Can explicit 3D and motion understanding improve LLM Q/A in metrology?}
+
+\section{Methodology: Enabling 4D Understanding}
+\label{sec:methodology}
+
+Our approach focuses on fusing explicit 3D spatial information with temporal motion data to create a unified 4D representation. The research will proceed in three main phases:
+
+\subsection{Dataset Assembly}
+We will assemble a benchmark dataset of challenging videos paired with Question/Answer sets that specifically require metrological reasoning. These will go beyond semantic description to test physical understanding in 4D space.
+
+\subsection{Representation Learning}
+We will investigate strong representations that combine:
+\begin{itemize}
+    \item \textbf{Textual Embeddings:} High-level semantic context.
+    \item \textbf{3D Representations:} Explicit spatial structure (e.g., point clouds, NeRFs, or depth maps).
+    \item \textbf{Motion Representations:} Temporal dynamics (e.g., scene flow, trajectories).
+\end{itemize}
+The goal is to find the optimal conditioning strategy for MLLMs to digest this multi-modal input.
+
+\subsection{Model Integration Strategies: Training with Explicit Temporal Supervision}
+Instead of relying on prompting or external tool-use, we propose to directly train Multimodal Large Language Models (MLLMs) with explicit timestamp information. By embedding time as a core modality alongside 3D spatial features, the model learns to correlate visual changes with precise temporal intervals. This approach allows the model to internalize the physics of motion, enabling direct calculation of speed and acceleration from its latent representations.
+
+\section{Evaluation and Validation}
+\label{sec:evaluation}
+
+To validate our 4D understanding framework, we will employ a rigorous evaluation protocol focusing on both metrological accuracy and semantic reasoning.
+
+\subsection{Metrics}
+\begin{itemize}
+    \item \textbf{Metrology Accuracy:} We will report Mean Absolute Error (MAE) and Relative Error for continuous quantities (speed in m/s, distance in meters).
+    \item \textbf{Event Counting:} Precision, Recall, and F1-score will measure the model's ability to correctly tally rapid events (e.g., number of rollovers).
+    \item \textbf{Question Answering:} Standard NLP metrics (BLEU, METEOR) combined with LLM-based evaluation (e.g., GPT-4 judge) to assess the correctness of physical explanations.
+\end{itemize}
+
+\subsection{Success Criteria: Good vs. Bad Results}
+Following the scientific method, we define clear expectations for experimental outcomes:
+\begin{itemize}
+    \item \textbf{Good Result:} The model achieves $<10\%$ error on speed estimation on the held-out test set and successfully generalizes to novel camera viewpoints. It can distinguish between causally similar but physically different events (e.g., slipping vs. tripping) and correctly reasons about "counter-intuitive" physics.
+    \item \textbf{Bad Result:} The model relies on 2D visual biases (e.g., motion blur magnitude) rather than true 3D understanding, failing when camera motion contradicts object motion. A failure to improve over 2D-only baselines would indicate that the current representation fusion strategy is insufficient, requiring a rethink of the conditioning mechanism.
+\end{itemize}
+
+\section{Expected Outcomes}
+\label{sec:outcomes}
+
+This research aims to deliver:
+\begin{itemize}
+    \item \textbf{A Novel Benchmark:} A standardized test suite for evaluating 4D physical understanding in MLLMs.
+    \item \textbf{Research Paper:} A publication detailing the methodology, the effectiveness of 4D conditioning, and the resulting improvements in video metrology Q/A.
+\end{itemize}
+
+\section{Technical Requirements}
+\label{sec:requirements}
+
+The project will be implemented using \textbf{PyTorch}, leveraging its extensive ecosystem for both 3D computer vision and large language model training.
+
+\section{Related Work}
+\label{sec:related}
+
+This proposal builds upon foundational work in spatial and temporal reasoning. Recent surveys like \cite{liu2024spatial} highlight the growing interest in equipping LLMs with spatial awareness. While models like 3D-LLM \cite{hong20233dllm} have made strides in static 3D understanding, and Video-LLaMA \cite{zhang2023video} in temporal video processing, a unified 4D approach remains underexplored. Our work aims to bridge this gap, drawing inspiration from metrology-focused efforts like SpatialVLM \cite{chen2024spatialvlm} and reasoning frameworks such as ViperGPT \cite{suris2023vipergpt}, but with a distinct focus on end-to-end training for dynamic physical understanding.
+
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}
