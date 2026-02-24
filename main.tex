@@ -10,7 +10,7 @@
 \titleformat*{\section}{\large\bfseries}
 \titleformat*{\subsection}{\normalsize\bfseries}
 
-\title{\large\bfseries Enhancing Video Understanding by Explicit 3D and Time: \\ Towards 4D Understanding in Metrology}
+\title{\large\bfseries Native 4D Multimodal Learning for Precise Video Metrology: \\ Bridging the Gap Between Semantic and Physical Understanding}
 \author{Aiden Li}
 \date{February 2026}
 
@@ -19,40 +19,50 @@
 \maketitle
 
 \begin{abstract}
-Current Multimodal Large Language Models (MLLMs) demonstrate impressive capabilities in general video description but often falter when tasked with precise metrology and detailed dynamic analysis. Questions requiring exact quantification of motion, speed, or spatial relationships, such as "How fast is the runner moving?" or "How many times did the car roll over?", remain challenging for state-of-the-art models like Gemini Flash or GPT-5-mini. This research proposal introduces a framework for \textbf{4D Understanding}, integrating explicit 3D spatial representations with temporal dynamics. By conditioning MLLMs on these rich 4D signals, we aim to bridge the gap between visual perception and physical reasoning.
+The landscape of Multimodal Large Language Models (MLLMs) has shifted rapidly from static 3D understanding to \textbf{Native 4D} reasoning (2025-2026). Models like 4DPC²hat and B4DL now explicitly process dynamic point clouds and LiDAR sequences, achieving strong performance in semantic captioning and QA. However, a critical \textbf{"Metrology Gap"} remains: while these systems can describe \textit{what} is happening (e.g., "a car is turning"), they lack the physical grounding to quantify \textit{how} it happens (e.g., precise velocity, acceleration, or force). This proposal introduces a framework for \textbf{Physically-Grounded Native 4D Understanding}, integrating state-of-the-art dynamic geometry encoders with physics-informed training objectives. By enforcing kinematic consistency within the MLLM's latent space, we aim to enable precise metrological reasoning alongside semantic understanding.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 
-Video understanding has seen rapid advancements with the advent of fast chat assistants. However, a significant gap remains in their ability to comprehend the detailed physical dynamics of a scene. While models can describe "a car crashing," they struggle to quantify the physics of the event. Specifically, current systems fail to reliably answer questions about detailed dynamics, such as understanding the precise mechanics of motion, or metrology tasks like quantifying speed, distance, and acceleration (e.g., "How fast is the runner moving toward the camera?"). Furthermore, they often struggle with event counting, such as accurately tallying complex, rapid events like the number of times a car rolls over in a crash. We posit that this limitation stems from the lack of explicit 3D and temporal grounding in the model's input representations. Although robust 3D reconstruction and motion estimation models exist, they are not yet effectively leveraged by chat assistants. This research asks: \textit{Can explicit 3D and motion understanding improve LLM Q/A in metrology?}
+The evolution of video understanding has reached a pivotal inflection point. Work from mid-2024 to early 2026 demonstrates a move beyond "static 3D + language" towards explicitly \textbf{4D (3D + Time)} architectures. Native 4D MLLMs like 4DPC²hat \cite{4dpc2hat2026} and B4DL \cite{b4dl2025} have shown that processing dynamic geometry directly—rather than relying solely on 2D video frames—significantly enhances spatiotemporal reasoning. Similarly, frameworks like DSR Suite \cite{dsrsuite2025} prove that injecting explicit "geometry tokens" can augment standard Video-VLMs.
 
-\section{Methodology: Enabling 4D Understanding}
-\label{sec:methodology}
-
-Our approach focuses on fusing explicit 3D spatial information with temporal motion data to create a unified 4D representation. The research will proceed in three main phases. First, in \textbf{Dataset Assembly}, we will assemble a benchmark dataset of challenging videos paired with Question/Answer sets that specifically require metrological reasoning. These will go beyond semantic description to test physical understanding in 4D space.
-
-Second, for \textbf{Representation Learning}, we will investigate strong representations that combine high-level semantic context from textual embeddings with explicit spatial structure from 3D representations (e.g., point clouds, NeRFs, or depth maps) and temporal dynamics from motion representations (e.g., scene flow, trajectories). The goal is to find the optimal conditioning strategy for MLLMs to digest this multi-modal input.
-
-Finally, regarding \textbf{Model Integration Strategies}, instead of relying on prompting or external tool-use, we propose to directly train Multimodal Large Language Models (MLLMs) with explicit timestamp information. By embedding time as a core modality alongside 3D spatial features, the model learns to correlate visual changes with precise temporal intervals. This approach allows the model to internalize the physics of motion, enabling direct calculation of speed and acceleration from its latent representations.
-
-\section{Evaluation and Validation}
-\label{sec:evaluation}
-
-To validate our 4D understanding framework, we will employ a rigorous evaluation protocol focusing on both metrological accuracy and semantic reasoning. For metrics, we will report Mean Absolute Error (MAE) and Relative Error for continuous quantities such as speed (m/s) and distance (meters). For event counting, Precision, Recall, and F1-score will measure the model's ability to correctly tally rapid events. Additionally, standard NLP metrics (BLEU, METEOR) combined with LLM-based evaluation (e.g., GPT-4 judge) will assess the correctness of physical explanations.
-
-Following the scientific method, we define clear expectations for experimental outcomes. A \textbf{good result} would see the model achieving $<10\%$ error on speed estimation on the held-out test set and successfully generalizing to novel camera viewpoints. It should be able to distinguish between causally similar but physically different events (e.g., slipping vs. tripping) and correctly reason about "counter-intuitive" physics. Conversely, a \textbf{bad result} would occur if the model relies on 2D visual biases (e.g., motion blur magnitude) rather than true 3D understanding, failing when camera motion contradicts object motion. A failure to improve over 2D-only baselines would indicate that the current representation fusion strategy is insufficient, requiring a rethink of the conditioning mechanism.
-
-\section{Expected Outcomes}
-\label{sec:outcomes}
-
-This research aims to deliver a novel benchmark, serving as a standardized test suite for evaluating 4D physical understanding in MLLMs. Furthermore, we intend to publish a research paper detailing the methodology, the effectiveness of 4D conditioning, and the resulting improvements in video metrology Q/A.
+Despite these advances, current 4D models predominantly focus on semantic tasks: captioning dynamic scenes, generating scene graphs, or answering qualitative questions. They falter when tasked with \textbf{Metrology}: the precise quantification of physical dynamics. Questions like "What is the instantaneous velocity of the vehicle?" or "Did the collision force exceed the safety threshold?" require more than pattern matching; they demand an internalization of physical laws. This research asks: \textit{Can we adapt Native 4D architectures to not only understand semantic change but also accurately quantify the physics of motion?}
 
 \section{Related Work}
 \label{sec:related}
 
-This proposal builds upon foundational work in spatial and temporal reasoning. Recent surveys like \cite{liu2024spatial} highlight the growing interest in equipping LLMs with spatial awareness. While models like 3D-LLM \cite{hong20233dllm} have made strides in static 3D understanding, and Video-LLaMA \cite{zhang2023video} in temporal video processing, a unified 4D approach remains underexplored. Our work aims to bridge this gap, drawing inspiration from metrology-focused efforts like SpatialVLM \cite{chen2024spatialvlm} and reasoning frameworks such as ViperGPT \cite{suris2023vipergpt}, but with a distinct focus on end-to-end training for dynamic physical understanding.
+This proposal builds upon the "Native 4D" wave of 2025-2026.
+\begin{itemize}
+    \item \textbf{Native 4D MLLMs:} 4DPC²hat \cite{4dpc2hat2026} sets the standard for dynamic object understanding using Point-BERT and Bidirectional Mamba backbones. B4DL \cite{b4dl2025} extends this to outdoor scenes with 4D LiDAR encoders.
+    \item \textbf{Hybrid & Geometry-Augmented Frameworks:} STLLM \cite{stllm2025} combines global static 3D contexts with local egocentric video for embodied reasoning. DSR Suite \cite{dsrsuite2025} introduces a "Geometry Selection Module" to inject 4D priors into video models.
+    \item \textbf{Structured 4D Reasoning:} PSG4D-LLM \cite{psg4dllm2025} and 4D LangSplat \cite{4dlangsplat2025} link LLMs to 4D scene graphs and Gaussian Splatting fields, respectively, facilitating open-vocabulary querying of dynamic scenes.
+    \item \textbf{Robotics:} 4D-VLA \cite{4dvla2025} leverages 4D pretraining for robust robotic manipulation, highlighting the value of spatiotemporal grounding for action.
+\end{itemize}
+Our work unifies these directions, specifically targeting the under-explored intersection of Native 4D processing and precision metrology.
 
+\section{Methodology: Enabling Physically-Grounded 4D Understanding}
+\label{sec:methodology}
+
+Our approach fuses explicit 4D structural learning with physics-informed supervision.
+
+\textbf{Constructing a Hybrid Synthetic-Real Metrology Benchmark.} 
+Data scarcity is a primary bottleneck for 4D learning \cite{4dpc2hat2026, b4dl2025}. We will construct "Metrology-Bench" using a hybrid pipeline. We will leverage physics simulators (CARLA, Blender) to generate synthetic video/LiDAR data with \textit{perfect} ground-truth annotations for velocity, acceleration, and forces—attributes impossible to label accurately in real data. This will be augmented with real-world sequences (e.g., from Ego4D or nuScenes) annotated via sparse photogrammetry, following the transfer learning protocols of B4DL and PSG4D-LLM.
+
+\textbf{Architecture: Adapting Native 4D Backbones.} 
+We will adopt a **Native 4D** architecture rather than a 2D-centric one. Drawing on 4DPC²hat \cite{4dpc2hat2026}, we will utilize a **Point-BERT + Bidirectional Mamba** encoder to capture the temporal evolution of 3D geometry efficiently. To handle the high dimensionality of 4D data, we will incorporate a **Geometry Selection Module** (inspired by DSR Suite \cite{dsrsuite2025}) to dynamically select only the most relevant spatiotemporal tokens for the LLM, ensuring computational feasibility without sacrificing precision.
+
+\textbf{Training with Kinematic Consistency Losses.} 
+Standard next-token prediction is insufficient for learning physics. We will introduce a multi-task training regime. Alongside text generation, the model will feature a **Coordinate Regression Head** (similar to PSG4D-LLM's output modules) to predict future object states. Crucially, we will apply a **Physics Consistency Loss** that penalizes predictions violating Newtonian mechanics (e.g., discrete jumps in velocity implying infinite acceleration). This forces the model's latent representation to respect the continuity of physical motion.
+
+\section{Evaluation and Validation}
+\label{sec:evaluation}
+
+We will validate our framework against state-of-the-art baselines, including **GPT-4V** (2D baseline), **4DPC²hat** (Native 4D semantic baseline), and **DSR Suite** (Geometry-augmented baseline).
+
+\textbf{Success Criteria.} A \textbf{good result} would demonstrate that the Physics-Informed Native 4D model achieves statistically significant improvements in speed (MAE) and distance estimation compared to semantic-only 4D models. It should successfully generalize to novel viewpoints and "counter-intuitive" physical scenarios where visual heuristics fail. A \textbf{bad result} would suggest that the model merely memorizes simulation artifacts or fails to transfer physical reasoning to real-world noisy data, indicating a need for more robust domain adaptation techniques.
+
+\newpage
 \bibliographystyle{plain}
 \bibliography{references}
 
