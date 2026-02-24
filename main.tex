@@ -51,7 +51,7 @@ On top of these 4D tokens, we modify the attention mechanism to reflect spatiote
 \section{Expected Outcomes}
 \label{sec:outcomes}
 
-We expect 4D-MLLM to provide a backbone that improves performance on benchmarks requiring viewpoint consistency, occlusion reasoning, and temporal causality. In practice, this should translate into stronger 3D-aware question answering (e.g., resolving relative depth and spatial relations under viewpoint changes), more reliable metrology-style reasoning (e.g., inferring speed and trajectory from changes in latent position over absolute time), and improved occlusion reasoning through object permanence, where entities remain represented even when temporarily invisible in the raw video stream. 
+We expect 4D-MLLM to establish a backbone architecture that learns stable, geometry-consistent spatiotemporal representations from timestamped 2D video. By redefining tokens as latent 4D entities and incorporating time-aware structure into attention and training objectives, the model should improve viewpoint consistency, object permanence under occlusion, and long-horizon temporal reasoning. These improvements are expected to yield measurable gains on benchmarks that stress 3D awareness, motion understanding, and temporal causality, while also demonstrating that structured 4D world representations can emerge through self-supervised learning. More broadly, this work aims to shift video-language modeling from sequence-level semantic encoding toward physically grounded, temporally coherent world modeling suitable for downstream reasoning and embodied applications.
 
 \newpage
 \bibliographystyle{plain}
