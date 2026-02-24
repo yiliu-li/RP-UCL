@@ -32,32 +32,36 @@ Conversely, "Native 4D" approaches that rely on explicit inputs like LiDAR or fu
 
 We introduce **ST-MLLM**, a framework designed to construct a 3D latent structure and model continuous time explicitly. By lifting 2D visual tokens into a 3D-aware latent space and fusing them with continuous timestamp embeddings, ST-MLLM learns to reason about spatial proximity and temporal causality, enabling capabilities previously reserved for specialized physics engines.
 
-\section{Methodology: ST-MLLM Framework}
+\section{Methodology}
 \label{sec:methodology}
 
-Our model processes a video sequence $\mathcal{V} = \{(I_t, \tau_t)\}_{t=1}^{T}$, consisting of RGB frames $I_t$ and real-world timestamps $\tau_t$. The architecture consists of five core stages:
+We propose a research plan centered on the development of **ST-MLLM**, structured into three core components. Our goal is not merely to process video pixels, but to construct a latent 4D world model that an LLM can reason over.
 
-\textbf{1. Visual Encoder.} We extract standard 2D visual features using a pre-trained backbone (e.g., CLIP-ViT or SigLIP), yielding a sequence of 2D patch tokens.
-
-\textbf{2. Geometry Induction Module (The Core).} Instead of explicit reconstruction, we learn a mapping $Z_t = f_{geo}(I_t, I_{t-1})$ to produce motion-aware geometry tokens.
+\subsection{Research Package 1: Geometry Induction and 2D-to-3D Lifting}
+The first challenge is to extract 3D structure from 2D video without the computational cost of full NeRF reconstruction. We propose a **Geometry Induction Module** that operates on the output of a standard Visual Encoder (e.g., SigLIP).
 \begin{itemize}
-    \item \textit{Pseudo-Depth & Optical Flow:} We utilize lightweight or frozen heads to estimate monocular depth maps and frame-to-frame optical flow.
-    \item \textit{2D-to-3D Lifting:} We lift each 2D patch token $p_i$ with coordinates $(u_i, v_i)$ and estimated depth $d_i$ into a latent 3D coordinate space: $x_i = (u_i, v_i, d_i) \rightarrow \mathbb{R}^3$. This transforms flat visual tokens into geometry-aware tokens $G_t$.
+    \item \textbf{Latent Depth Estimation:} We will train a lightweight "Depth Head" to predict a pseudo-depth value $d_i$ for each visual patch token $p_i$. Unlike dense depth estimation, this head is optimized for relative ordering and consistency rather than absolute metric accuracy.
+    \item \textbf{Token Lifting:} Each 2D token with image coordinates $(u_i, v_i)$ will be "lifted" into a 3D embedding space via a learnable projection: $x_i = \text{MLP}(u_i, v_i, d_i)$. This transforms a flat sequence of patches into a cloud of geometry-aware tokens $G_t$, effectively creating a "latent point cloud" for each frame.
+    \item \textbf{Optical Flow Integration:} To capture short-term dynamics, we will incorporate a flow-based objective that aligns geometric tokens across adjacent frames, ensuring that $G_t$ and $G_{t+1}$ are spatially consistent consistent with the object's motion.
 \end{itemize}
 
-\textbf{3. Temporal Structure Module.} To move beyond discrete frame indices, we employ **Continuous Time Encoding** $\gamma(\tau_t)$. This module combines learnable time embeddings with sinusoidal encodings of real-world timestamps (e.g., hours, seconds), allowing the model to understand irregular sampling rates and precise durations.
-
-\textbf{4. 4D Token Mixer: SpatioTemporal Transformer.} We fuse the visual, geometric, and temporal tokens using a specialized Transformer. Crucially, we introduce a **3D-Aware Attention Bias**:
-\[
-A_{ij} = \text{Attention}(Q_i, K_j) + f_{\text{bias}}(|x_i - x_j|_{3D}, |\tau_i - \tau_j|)
-\]
-This bias modulates attention weights based on 3D spatial distance and temporal interval, explicitly encouraging the model to attend to tokens that are physically close in space-time or causally related, rather than just semantically similar.
-
-\textbf{5. Training Objectives.} We employ three physics-informed losses:
+\subsection{Research Package 2: SpatioTemporal Transformer with 3D-Aware Attention}
+Standard Transformers treat all tokens as equidistant. We hypothesize that physical reasoning requires an attention mechanism that respects the laws of space and time. We will design a **4D Token Mixer** that fuses visual, geometric, and temporal information.
 \begin{itemize}
-    \item \textit{SpatioTemporal Contrastive Loss:} Forces the model to distinguish between (Same Location, Different Time) and (Different Location, Same Time) pairs.
-    \item \textit{Future State Prediction:} $Z_{t+1} = f(Z_t, \text{motion})$, requiring the model to predict the next latent state based on current physics.
-    \item \textit{3D Consistency Constraint:} Enforces that static objects maintain consistent 3D latent representations across time $f(x, t_1) \approx f(x, t_2)$.
+    \item \textbf{Continuous Time Encoding:} Instead of discrete position IDs, we will implement a continuous encoding function $\gamma(\tau_t)$ mapping real-world timestamps (in seconds) to high-dimensional embeddings. This allows the model to handle irregular frame rates and understand precise durations (e.g., velocity calculation).
+    \item \textbf{3D-Aware Attention Bias:} We will modify the self-attention mechanism to explicitly prioritize physically proximal tokens. The attention score $A_{ij}$ between tokens $i$ and $j$ will be modulated by a bias term:
+    \[
+    A_{ij} = \text{Softmax}(Q_i K_j^T + \lambda_1 \cdot f_{\text{space}}(|x_i - x_j|) + \lambda_2 \cdot f_{\text{time}}(|\tau_i - \tau_j|))
+    \]
+    This bias forces the model to attend to "what is near" and "what happened recently," embedding spatiotemporal locality directly into the architecture.
+\end{itemize}
+
+\subsection{Research Package 3: Physics-Informed Training Objectives}
+To ground the model's reasoning in physical reality, we will move beyond simple text prediction. We propose a multi-task training regime with specific physics-based loss functions.
+\begin{itemize}
+    \item \textbf{SpatioTemporal Contrastive Loss:} We will construct positive pairs from tokens representing the same object across different times, and negative pairs from spatially adjacent but semantically distinct objects. This forces the latent space to disentangle "identity" from "position."
+    \item \textbf{Future State Prediction (Dynamics Modeling):} We will introduce a predictive objective $Z_{t+1} = \text{Predictor}(Z_t, \Delta t)$, requiring the model to anticipate the future state of geometric tokens. This encourages the learning of implicit motion laws (e.g., inertia, gravity).
+    \item \textbf{3D Consistency Constraint:} For objects classified as "static," we will enforce that their lifted 3D coordinates remain stable across the video sequence, penalizing "drifting" geometry that plagues standard video models.
 \end{itemize}
 
 \section{Expected Outcomes}
