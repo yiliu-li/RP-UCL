@@ -21,15 +21,15 @@
 \maketitle
 
 \begin{abstract}
-Current Video-LLMs treat video as a sequence of 2D patches, effectively reducing "time" to a frame index and "space" to flattened features. This sequence modeling approach lacks explicit 3D structure and continuous temporal reasoning, preventing models from understanding the physical "world" behind the pixels. We propose \textbf{4D-MLLM}, a paradigm shift from video sequence modeling to \textbf{4D World Modeling}. Instead of processing 2D patches, 4D-MLLM learns \textbf{4D Latent Tokens} $T_i = (f_i, x_i, \tau_i)$—comprising visual features, learned latent 3D coordinates, and continuous timestamps. By employing a \textbf{Geometry Induction Head} to learn 3D consistency from self-supervision and a \textbf{Structured 4D Attention} mechanism with spatio-temporal biases, the model constructs a unified 4D latent representation. Trained via Masked 4D Modeling, 4D-MLLM enables true joint reasoning over space, time, and object dynamics without requiring explicit SLAM or depth supervision.
+Current Video-LLMs treat video as a sequence of 2D patches, effectively reducing "time" to a frame index and "space" to flattened features. This sequence modeling approach lacks explicit 3D structure and continuous temporal reasoning, preventing models from understanding the physical "world" behind the pixels. We propose 4D-MLLM, a paradigm shift from video sequence modeling to 4D World Modeling. Instead of processing 2D patches, 4D-MLLM learns 4D Latent Tokens $T_i = (f_i, x_i, \tau_i)$—comprising visual features, learned latent 3D coordinates, and continuous timestamps. By employing a Geometry Induction Head to learn 3D consistency from self-supervision and a Structured 4D Attention mechanism with spatio-temporal biases, the model constructs a unified 4D latent representation. Trained via Masked 4D Modeling, 4D-MLLM enables true joint reasoning over space, time, and object dynamics without requiring explicit SLAM or depth supervision.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 
-The dominant paradigm in Video Understanding treats video as a temporal sequence of static images. Standard backbones tokenize frames into 2D patches and add positional embeddings, effectively modeling video as $Sequence(Frame_1, Frame_2, ...)$. While successful for semantic captioning, this approach fails at **Metrology** and **Physical Reasoning**. The model does not know that two pixels in different frames represent the same 3D object, nor does it understand the continuous flow of time between frames. It models the *video signal*, not the *underlying world*.
+The dominant paradigm in Video Understanding treats video as a temporal sequence of static images. Standard backbones tokenize frames into 2D patches and add positional embeddings, effectively modeling video as $Sequence(Frame_1, Frame_2, ...)$. While successful for semantic captioning, this approach fails at Metrology and Physical Reasoning. The model does not know that two pixels in different frames represent the same 3D object, nor does it understand the continuous flow of time between frames. It models the *video signal*, not the *underlying world*.
 
-We introduce \textbf{4D-MLLM}, a **4D Latent World Model Transformer**. Our core insight is that tokens should not be 2D patches, but **4D entities** possessing both spatial coordinates and temporal existence. 4D-MLLM induces a structured 4D latent space directly from timestamped 2D video. It learns to "lift" 2D visual features into latent 3D coordinates $x_i$ and models dynamics via continuous time $\tau_i$, allowing it to reason about "what is where, when" with physical consistency.
+We introduce 4D-MLLM, a 4D Latent World Model Transformer. Our core insight is that tokens should not be 2D patches, but 4D entities possessing both spatial coordinates and temporal existence. 4D-MLLM induces a structured 4D latent space directly from timestamped 2D video. It learns to "lift" 2D visual features into latent 3D coordinates $x_i$ and models dynamics via continuous time $\tau_i$, allowing it to reason about "what is where, when" with physical consistency.
 
 \section{Methodology: A New 4D Backbone Paradigm}
 \label{sec:methodology}
@@ -37,41 +37,16 @@ We introduce \textbf{4D-MLLM}, a **4D Latent World Model Transformer**. Our core
 We propose a backbone that transforms the fundamental unit of computation from a "2D Patch" to a "4D Token".
 
 \subsection{Core Design: 4D Tokenization}
-Unlike traditional ViTs that map patches to embeddings, we define a 4D Token $T_i$ as a tuple:
-\[
-T_i = (f_i, x_i, \tau_i)
-\]
-\begin{itemize}
-    \item $f_i$: Visual feature vector (appearance).
-    \item $x_i$: **Latent 3D Coordinate** (geometry). This is \textit{not} Ground Truth 3D, but a learned embedding in a latent metric space $\mathbb{R}^3$.
-    \item $\tau_i$: **Absolute Continuous Time** (dynamics). A continuous value (e.g., seconds), not a discrete index.
-\end{itemize}
+Unlike traditional ViTs that map patches to simple embeddings, we define a 4D Token $T_i$ as a tuple combining visual, geometric, and temporal attributes: $T_i = (f_i, x_i, \tau_i)$. Here, $f_i$ represents the visual feature vector (appearance), $x_i$ denotes the learned latent 3D coordinate (geometry), and $\tau_i$ encodes absolute continuous time (dynamics). Crucially, $x_i$ is not a ground-truth 3D point but a learned embedding in a latent metric space, allowing the model to self-organize spatial relationships without explicit supervision.
 
 \subsection{Geometry Induction: Learning 3D without SLAM}
-We avoid expensive explicit 3D reconstruction (e.g., SLAM/NeRF). Instead, we introduce a **Geometry Induction Head** trained via self-supervision.
-\begin{itemize}
-    \item \textbf{Principle:} If visual patches across time undergo appearance changes consistent with perspective shifts, they share the same underlying 3D latent $x$.
-    \item \textbf{Mechanism:} The model predicts a latent coordinate $x_i = g(f_i, \text{context})$. We enforce a **3D Consistency Constraint**: for tokens identifying the same static object, $x_{i,t} \approx x_{j,t+1}$. For dynamic objects, the shift in $x$ must follow learned kinematic laws. This forces the model to organize its latent space geometrically.
-\end{itemize}
+We avoid expensive explicit 3D reconstruction methods like SLAM or NeRF. Instead, we introduce a Geometry Induction Head trained via self-supervision. The core principle is that if visual patches across time undergo appearance changes consistent with perspective shifts, they must share the same underlying 3D latent coordinate $x$. The model predicts this latent coordinate $x_i = g(f_i, \text{context})$ and is constrained by a 3D Consistency Loss: for tokens identifying the same static object, the predicted 3D coordinates should remain stable ($x_{i,t} \approx x_{j,t+1}$), while dynamic objects must follow learned kinematic laws. This mechanism forces the model to organize its latent space geometrically.
 
-\subsection{Continuous Time & Dynamics Modeling}
-Time is modeled as a continuous variable $\gamma(\tau)$ using learnable Fourier features, enabling handling of variable framerates. We explicitly model dynamics via a **Time-Aware Dynamics Head**:
-\[
-\Delta x = h(x_t, \Delta \tau)
-\]
-This module learns to predict how the latent position $x$ of an object evolves over a time interval $\Delta \tau$, effectively internalizing velocity and motion constraints.
+\subsection{Continuous Time \& Dynamics Modeling}
+Time is modeled as a continuous variable using learnable Fourier features, enabling the system to handle variable framerates and precise durations. We explicitly model dynamics via a Time-Aware Dynamics Head that learns to predict how the latent position $x$ of an object evolves over a time interval $\Delta \tau$. This module effectively internalizes velocity and motion constraints, allowing the model to understand not just where an object is, but how it is moving.
 
 \subsection{Structured 4D Attention Mechanism}
-Standard Self-Attention is geometry-agnostic. We propose **4D Attention** with explicit Spatio-Temporal Biases. The attention score between tokens $i$ and $j$ is:
-\[
-A_{ij} = \text{Softmax}\left( Q_i K_j^T + B_{\text{space}} + B_{\text{time}} \right)
-\]
-Where:
-\begin{itemize}
-    \item $B_{\text{space}} = -\alpha \| x_i - x_j \|$: Penalizes attention between physically distant tokens (in latent 3D space).
-    \item $B_{\text{time}} = -\beta | \tau_i - \tau_j |$: Penalizes attention between temporally distant events.
-\end{itemize}
-Parameters $\alpha$ and $\beta$ are learnable. This structure forces the model to prioritize "spatially near" and "temporally causal" information, mimicking physical interactions.
+Standard Self-Attention is geometry-agnostic, treating all tokens as equidistant. We propose a 4D Attention mechanism with explicit Spatio-Temporal Biases. The attention score is modulated by terms that penalize attention between physically distant tokens (in latent 3D space) and temporally distant events. By incorporating learnable parameters for these biases, the model naturally learns to prioritize information that is "spatially near" and "temporally causal," mimicking physical interactions in the real world.
 
 \subsection{Training Objective: Masked 4D Modeling}
 To train this backbone as a foundation model, we employ **Masked 4D Modeling**:
@@ -83,7 +58,7 @@ To train this backbone as a foundation model, we employ **Masked 4D Modeling**:
 \section{Expected Outcomes & Distinction}
 \label{sec:outcomes}
 
-\textbf{Paradigm Shift:} 4D-MLLM moves from "Sequence Modeling" to "**World Modeling**". It does not just predict the next word; it maintains a consistent, evolving 4D representation of the scene.
+\textbf{Paradigm Shift:} 4D-MLLM moves from "Sequence Modeling" to "World Modeling". It does not just predict the next word; it maintains a consistent, evolving 4D representation of the scene.
 
 \textbf{Capabilities:}
 \begin{itemize}
@@ -95,7 +70,7 @@ To train this backbone as a foundation model, we employ **Masked 4D Modeling**:
 \section{Related Work}
 \label{sec:related}
 
-This proposal diverges from standard Video-LLMs like Video-LLaMA \cite{zhang2023video}, which lack explicit geometry. Unlike Native 4D models \cite{4dpc2hat2026} that require point cloud inputs, 4D-MLLM \textit{induces} geometry from 2D video. It aligns with the "World Model" vision but applies it specifically to constructing a structured backbone for Multimodal LLMs.
+This proposal diverges from standard Video-LLMs like Video-LLaMA \cite{zhang2023video}, which lack explicit geometry. Unlike Native 4D models \cite{4dpc2hat2026} that require point cloud inputs, 4D-MLLM \textit{induces} geometry from 2D video. It aligns with the ``World Model'' vision but applies it specifically to constructing a structured backbone for Multimodal LLMs.
 
 \newpage
 \bibliographystyle{plain}
