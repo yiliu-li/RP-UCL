@@ -20,25 +20,25 @@
 \maketitle
 
 \begin{abstract}
-Current Video-LLMs treat time merely as a frame index and space as flattened 2D patches, lacking explicit 3D modeling and continuous temporal reasoning. This limitation prevents them from truly "understanding" the physical dynamics of a scene, such as quantifying speed, trajectory, or causal relationships in 4D space. We propose **ST-MLLM** (Structured SpatioTemporal Multimodal Large Model), a novel framework that induces a structured 4D latent representation directly from 2D video and timestamps. Instead of heavy explicit 3D reconstruction (e.g., NeRF), ST-MLLM utilizes a **Geometry Induction Module** to lift 2D tokens into motion-aware 3D coordinates and a **Continuous Time Encoding** to model temporal causality. By conditioning a Large Language Model on these structured 4D tokens via a SpatioTemporal Transformer, we aim to bridge the gap between semantic video description and precise physical metrology.
+Current Video-LLMs treat time merely as a frame index and space as flattened 2D patches, lacking explicit 3D modeling and continuous temporal reasoning. This limitation prevents them from truly "understanding" the physical dynamics of a scene, such as quantifying speed, trajectory, or causal relationships in 4D space. We propose ST-MLLM (Structured SpatioTemporal Multimodal Large Model), a novel framework that induces a structured 4D latent representation directly from 2D video and timestamps. Instead of heavy explicit 3D reconstruction (e.g., NeRF), ST-MLLM utilizes a Geometry Induction Module to lift 2D tokens into motion-aware 3D coordinates and a Continuous Time Encoding to model temporal causality. By conditioning a Large Language Model on these structured 4D tokens via a SpatioTemporal Transformer, we aim to bridge the gap between semantic video description and precise physical metrology.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 
-Standard Video Multimodal Large Language Models (Video-MLLMs) suffer from a fundamental disconnect between their input representation and the physical world. They process video as a sequence of 2D images, where "time" is reduced to a discrete sequence index and "space" is compressed into feature vectors. While effective for semantic captioning, this approach fails at **Metrology**—the precise quantification of physical dynamics. They cannot reliably answer "How fast is the car moving?" or "Will these two objects collide?" because they lack an internal model of 3D geometry and continuous time.
+Standard Video Multimodal Large Language Models (Video-MLLMs) suffer from a fundamental disconnect between their input representation and the physical world. They process video as a sequence of 2D images, where "time" is reduced to a discrete sequence index and "space" is compressed into feature vectors. While effective for semantic captioning, this approach fails at Metrology—the precise quantification of physical dynamics. They cannot reliably answer "How fast is the car moving?" or "Will these two objects collide?" because they lack an internal model of 3D geometry and continuous time.
 
-Conversely, "Native 4D" approaches that rely on explicit inputs like LiDAR or full 3D point cloud sequences \cite{4dpc2hat2026, b4dl2025} are computationally expensive and limited by data availability. We argue for a middle path: **inducing** 4D structure from ubiquitous 2D video.
+Conversely, "Native 4D" approaches that rely on explicit inputs like LiDAR or full 3D point cloud sequences \cite{4dpc2hat2026, b4dl2025} are computationally expensive and limited by data availability. We argue for a middle path: inducing 4D structure from ubiquitous 2D video.
 
-We introduce **ST-MLLM**, a framework designed to construct a 3D latent structure and model continuous time explicitly. By lifting 2D visual tokens into a 3D-aware latent space and fusing them with continuous timestamp embeddings, ST-MLLM learns to reason about spatial proximity and temporal causality, enabling capabilities previously reserved for specialized physics engines.
+We introduce ST-MLLM, a framework designed to construct a 3D latent structure and model continuous time explicitly. By lifting 2D visual tokens into a 3D-aware latent space and fusing them with continuous timestamp embeddings, ST-MLLM learns to reason about spatial proximity and temporal causality, enabling capabilities previously reserved for specialized physics engines.
 
 \section{Methodology}
 \label{sec:methodology}
 
-We propose a research plan centered on the development of **ST-MLLM**, structured into three core components. Our goal is not merely to process video pixels, but to construct a latent 4D world model that an LLM can reason over.
+We propose a research plan centered on the development of ST-MLLM, structured into three core components. Our goal is not merely to process video pixels, but to construct a latent 4D world model that an LLM can reason over.
 
 \subsection{Research Package 1: Geometry Induction and 2D-to-3D Lifting}
-The first challenge is to extract 3D structure from 2D video without the computational cost of full NeRF reconstruction. We propose a **Geometry Induction Module** that operates on the output of a standard Visual Encoder (e.g., SigLIP).
+The first challenge is to extract 3D structure from 2D video without the computational cost of full NeRF reconstruction. We propose a Geometry Induction Module that operates on the output of a standard Visual Encoder (e.g., SigLIP).
 \begin{itemize}
     \item \textbf{Latent Depth Estimation:} We will train a lightweight "Depth Head" to predict a pseudo-depth value $d_i$ for each visual patch token $p_i$. Unlike dense depth estimation, this head is optimized for relative ordering and consistency rather than absolute metric accuracy.
     \item \textbf{Token Lifting:} Each 2D token with image coordinates $(u_i, v_i)$ will be "lifted" into a 3D embedding space via a learnable projection: $x_i = \text{MLP}(u_i, v_i, d_i)$. This transforms a flat sequence of patches into a cloud of geometry-aware tokens $G_t$, effectively creating a "latent point cloud" for each frame.
@@ -46,7 +46,7 @@ The first challenge is to extract 3D structure from 2D video without the computa
 \end{itemize}
 
 \subsection{Research Package 2: SpatioTemporal Transformer with 3D-Aware Attention}
-Standard Transformers treat all tokens as equidistant. We hypothesize that physical reasoning requires an attention mechanism that respects the laws of space and time. We will design a **4D Token Mixer** that fuses visual, geometric, and temporal information.
+Standard Transformers treat all tokens as equidistant. We hypothesize that physical reasoning requires an attention mechanism that respects the laws of space and time. We will design a 4D Token Mixer that fuses visual, geometric, and temporal information.
 \begin{itemize}
     \item \textbf{Continuous Time Encoding:} Instead of discrete position IDs, we will implement a continuous encoding function $\gamma(\tau_t)$ mapping real-world timestamps (in seconds) to high-dimensional embeddings. This allows the model to handle irregular frame rates and understand precise durations (e.g., velocity calculation).
     \item \textbf{3D-Aware Attention Bias:} We will modify the self-attention mechanism to explicitly prioritize physically proximal tokens. The attention score $A_{ij}$ between tokens $i$ and $j$ will be modulated by a bias term:
@@ -77,7 +77,7 @@ We expect ST-MLLM to demonstrate superior performance in:
 \section{Related Work}
 \label{sec:related}
 
-This work bridges the gap between **Video-LLMs** \cite{zhang2023video, ren2023timechat}, which lack 3D structure, and **Native 4D Models** \cite{4dpc2hat2026, b4dl2025}, which require heavy 3D inputs. While recent work like DSR Suite \cite{dsrsuite2025} augments VLMs with geometry tokens, our Geometry Induction Module offers a more end-to-end approach, internalizing the 2D-to-3D lifting process directly within the model's latent space.
+This work bridges the gap between Video-LLMs \cite{zhang2023video, ren2023timechat}, which lack 3D structure, and Native 4D Models \cite{4dpc2hat2026, b4dl2025}, which require heavy 3D inputs. While recent work like DSR Suite \cite{dsrsuite2025} augments VLMs with geometry tokens, our Geometry Induction Module offers a more end-to-end approach, internalizing the 2D-to-3D lifting process directly within the model's latent space.
 
 \newpage
 \bibliographystyle{plain}
