@@ -9,58 +9,71 @@
 \usepackage[compact]{titlesec}
 \titleformat*{\section}{\large\bfseries}
 \titleformat*{\subsection}{\normalsize\bfseries}
+\usepackage{amsmath}
 
-\title{\large\bfseries Native 4D Multimodal Learning for Precise Video Metrology: \\ Bridging the Gap Between Semantic and Physical Understanding}
+\title{\large\bfseries ST-MLLM: Structured SpatioTemporal Multimodal Large Model for \\ Physically-Grounded Video Understanding}
 \author{Aiden Li}
-\date{February 2026}
+\date{}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-The landscape of Multimodal Large Language Models (MLLMs) has shifted rapidly from static 3D understanding to \textbf{Native 4D} reasoning (2025-2026). Models like 4DPC²hat and B4DL now explicitly process dynamic point clouds and LiDAR sequences, achieving strong performance in semantic captioning and QA. However, a critical \textbf{"Metrology Gap"} remains: while these systems can describe \textit{what} is happening (e.g., "a car is turning"), they lack the physical grounding to quantify \textit{how} it happens (e.g., precise velocity, acceleration, or force). This proposal introduces a framework for \textbf{Physically-Grounded Native 4D Understanding}, integrating state-of-the-art dynamic geometry encoders with physics-informed training objectives. By enforcing kinematic consistency within the MLLM's latent space, we aim to enable precise metrological reasoning alongside semantic understanding.
+Current Video-LLMs treat time merely as a frame index and space as flattened 2D patches, lacking explicit 3D modeling and continuous temporal reasoning. This limitation prevents them from truly "understanding" the physical dynamics of a scene, such as quantifying speed, trajectory, or causal relationships in 4D space. We propose **ST-MLLM** (Structured SpatioTemporal Multimodal Large Model), a novel framework that induces a structured 4D latent representation directly from 2D video and timestamps. Instead of heavy explicit 3D reconstruction (e.g., NeRF), ST-MLLM utilizes a **Geometry Induction Module** to lift 2D tokens into motion-aware 3D coordinates and a **Continuous Time Encoding** to model temporal causality. By conditioning a Large Language Model on these structured 4D tokens via a SpatioTemporal Transformer, we aim to bridge the gap between semantic video description and precise physical metrology.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:introduction}
 
-The evolution of video understanding has reached a pivotal inflection point. Work from mid-2024 to early 2026 demonstrates a move beyond "static 3D + language" towards explicitly \textbf{4D (3D + Time)} architectures. Native 4D MLLMs like 4DPC²hat \cite{4dpc2hat2026} and B4DL \cite{b4dl2025} have shown that processing dynamic geometry directly—rather than relying solely on 2D video frames—significantly enhances spatiotemporal reasoning. Similarly, frameworks like DSR Suite \cite{dsrsuite2025} prove that injecting explicit "geometry tokens" can augment standard Video-VLMs.
+Standard Video Multimodal Large Language Models (Video-MLLMs) suffer from a fundamental disconnect between their input representation and the physical world. They process video as a sequence of 2D images, where "time" is reduced to a discrete sequence index and "space" is compressed into feature vectors. While effective for semantic captioning, this approach fails at **Metrology**—the precise quantification of physical dynamics. They cannot reliably answer "How fast is the car moving?" or "Will these two objects collide?" because they lack an internal model of 3D geometry and continuous time.
 
-Despite these advances, current 4D models predominantly focus on semantic tasks: captioning dynamic scenes, generating scene graphs, or answering qualitative questions. They falter when tasked with \textbf{Metrology}: the precise quantification of physical dynamics. Questions like "What is the instantaneous velocity of the vehicle?" or "Did the collision force exceed the safety threshold?" require more than pattern matching; they demand an internalization of physical laws. This research asks: \textit{Can we adapt Native 4D architectures to not only understand semantic change but also accurately quantify the physics of motion?}
+Conversely, "Native 4D" approaches that rely on explicit inputs like LiDAR or full 3D point cloud sequences \cite{4dpc2hat2026, b4dl2025} are computationally expensive and limited by data availability. We argue for a middle path: **inducing** 4D structure from ubiquitous 2D video.
+
+We introduce **ST-MLLM**, a framework designed to construct a 3D latent structure and model continuous time explicitly. By lifting 2D visual tokens into a 3D-aware latent space and fusing them with continuous timestamp embeddings, ST-MLLM learns to reason about spatial proximity and temporal causality, enabling capabilities previously reserved for specialized physics engines.
+
+\section{Methodology: ST-MLLM Framework}
+\label{sec:methodology}
+
+Our model processes a video sequence $\mathcal{V} = \{(I_t, \tau_t)\}_{t=1}^{T}$, consisting of RGB frames $I_t$ and real-world timestamps $\tau_t$. The architecture consists of five core stages:
+
+\textbf{1. Visual Encoder.} We extract standard 2D visual features using a pre-trained backbone (e.g., CLIP-ViT or SigLIP), yielding a sequence of 2D patch tokens.
+
+\textbf{2. Geometry Induction Module (The Core).} Instead of explicit reconstruction, we learn a mapping $Z_t = f_{geo}(I_t, I_{t-1})$ to produce motion-aware geometry tokens.
+\begin{itemize}
+    \item \textit{Pseudo-Depth & Optical Flow:} We utilize lightweight or frozen heads to estimate monocular depth maps and frame-to-frame optical flow.
+    \item \textit{2D-to-3D Lifting:} We lift each 2D patch token $p_i$ with coordinates $(u_i, v_i)$ and estimated depth $d_i$ into a latent 3D coordinate space: $x_i = (u_i, v_i, d_i) \rightarrow \mathbb{R}^3$. This transforms flat visual tokens into geometry-aware tokens $G_t$.
+\end{itemize}
+
+\textbf{3. Temporal Structure Module.} To move beyond discrete frame indices, we employ **Continuous Time Encoding** $\gamma(\tau_t)$. This module combines learnable time embeddings with sinusoidal encodings of real-world timestamps (e.g., hours, seconds), allowing the model to understand irregular sampling rates and precise durations.
+
+\textbf{4. 4D Token Mixer: SpatioTemporal Transformer.} We fuse the visual, geometric, and temporal tokens using a specialized Transformer. Crucially, we introduce a **3D-Aware Attention Bias**:
+\[
+A_{ij} = \text{Attention}(Q_i, K_j) + f_{\text{bias}}(|x_i - x_j|_{3D}, |\tau_i - \tau_j|)
+\]
+This bias modulates attention weights based on 3D spatial distance and temporal interval, explicitly encouraging the model to attend to tokens that are physically close in space-time or causally related, rather than just semantically similar.
+
+\textbf{5. Training Objectives.} We employ three physics-informed losses:
+\begin{itemize}
+    \item \textit{SpatioTemporal Contrastive Loss:} Forces the model to distinguish between (Same Location, Different Time) and (Different Location, Same Time) pairs.
+    \item \textit{Future State Prediction:} $Z_{t+1} = f(Z_t, \text{motion})$, requiring the model to predict the next latent state based on current physics.
+    \item \textit{3D Consistency Constraint:} Enforces that static objects maintain consistent 3D latent representations across time $f(x, t_1) \approx f(x, t_2)$.
+\end{itemize}
+
+\section{Expected Outcomes}
+\label{sec:outcomes}
+
+We expect ST-MLLM to demonstrate superior performance in:
+\begin{itemize}
+    \item \textbf{3D-Aware QA:} Answering questions about relative depth and spatial relationships without explicit 3D inputs.
+    \item \textbf{Precise Metrology:} Estimating speed and trajectory by reasoning over continuous time and induced 3D structure.
+    \item \textbf{Causal Reasoning:} Understanding event sequences based on physical proximity rather than just visual co-occurrence.
+\end{itemize}
 
 \section{Related Work}
 \label{sec:related}
 
-This proposal builds upon the "Native 4D" wave of 2025-2026.
-\begin{itemize}
-    \item \textbf{Native 4D MLLMs:} 4DPC²hat \cite{4dpc2hat2026} sets the standard for dynamic object understanding using Point-BERT and Bidirectional Mamba backbones. B4DL \cite{b4dl2025} extends this to outdoor scenes with 4D LiDAR encoders.
-    \item \textbf{Hybrid & Geometry-Augmented Frameworks:} STLLM \cite{stllm2025} combines global static 3D contexts with local egocentric video for embodied reasoning. DSR Suite \cite{dsrsuite2025} introduces a "Geometry Selection Module" to inject 4D priors into video models.
-    \item \textbf{Structured 4D Reasoning:} PSG4D-LLM \cite{psg4dllm2025} and 4D LangSplat \cite{4dlangsplat2025} link LLMs to 4D scene graphs and Gaussian Splatting fields, respectively, facilitating open-vocabulary querying of dynamic scenes.
-    \item \textbf{Robotics:} 4D-VLA \cite{4dvla2025} leverages 4D pretraining for robust robotic manipulation, highlighting the value of spatiotemporal grounding for action.
-\end{itemize}
-Our work unifies these directions, specifically targeting the under-explored intersection of Native 4D processing and precision metrology.
-
-\section{Methodology: Enabling Physically-Grounded 4D Understanding}
-\label{sec:methodology}
-
-Our approach fuses explicit 4D structural learning with physics-informed supervision.
-
-\textbf{Constructing a Hybrid Synthetic-Real Metrology Benchmark.} 
-Data scarcity is a primary bottleneck for 4D learning \cite{4dpc2hat2026, b4dl2025}. We will construct "Metrology-Bench" using a hybrid pipeline. We will leverage physics simulators (CARLA, Blender) to generate synthetic video/LiDAR data with \textit{perfect} ground-truth annotations for velocity, acceleration, and forces—attributes impossible to label accurately in real data. This will be augmented with real-world sequences (e.g., from Ego4D or nuScenes) annotated via sparse photogrammetry, following the transfer learning protocols of B4DL and PSG4D-LLM.
-
-\textbf{Architecture: Adapting Native 4D Backbones.} 
-We will adopt a **Native 4D** architecture rather than a 2D-centric one. Drawing on 4DPC²hat \cite{4dpc2hat2026}, we will utilize a **Point-BERT + Bidirectional Mamba** encoder to capture the temporal evolution of 3D geometry efficiently. To handle the high dimensionality of 4D data, we will incorporate a **Geometry Selection Module** (inspired by DSR Suite \cite{dsrsuite2025}) to dynamically select only the most relevant spatiotemporal tokens for the LLM, ensuring computational feasibility without sacrificing precision.
-
-\textbf{Training with Kinematic Consistency Losses.} 
-Standard next-token prediction is insufficient for learning physics. We will introduce a multi-task training regime. Alongside text generation, the model will feature a **Coordinate Regression Head** (similar to PSG4D-LLM's output modules) to predict future object states. Crucially, we will apply a **Physics Consistency Loss** that penalizes predictions violating Newtonian mechanics (e.g., discrete jumps in velocity implying infinite acceleration). This forces the model's latent representation to respect the continuity of physical motion.
-
-\section{Evaluation and Validation}
-\label{sec:evaluation}
-
-We will validate our framework against state-of-the-art baselines, including **GPT-4V** (2D baseline), **4DPC²hat** (Native 4D semantic baseline), and **DSR Suite** (Geometry-augmented baseline).
-
-\textbf{Success Criteria.} A \textbf{good result} would demonstrate that the Physics-Informed Native 4D model achieves statistically significant improvements in speed (MAE) and distance estimation compared to semantic-only 4D models. It should successfully generalize to novel viewpoints and "counter-intuitive" physical scenarios where visual heuristics fail. A \textbf{bad result} would suggest that the model merely memorizes simulation artifacts or fails to transfer physical reasoning to real-world noisy data, indicating a need for more robust domain adaptation techniques.
+This work bridges the gap between **Video-LLMs** \cite{zhang2023video, ren2023timechat}, which lack 3D structure, and **Native 4D Models** \cite{4dpc2hat2026, b4dl2025}, which require heavy 3D inputs. While recent work like DSR Suite \cite{dsrsuite2025} augments VLMs with geometry tokens, our Geometry Induction Module offers a more end-to-end approach, internalizing the 2D-to-3D lifting process directly within the model's latent space.
 
 \newpage
 \bibliographystyle{plain}
